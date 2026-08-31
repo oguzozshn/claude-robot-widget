@@ -1,0 +1,23 @@
+{
+  "_comment": "Bu bloğu .claude/settings.json (proje) veya ~/.claude/settings.json (global) icine kopyala. Yollar bu kurulum icin doldurulmustur.",
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+    ],
+    "PreToolUse": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+    ],
+    "Notification": [
+      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+    ]
+  }
+}
