@@ -1,0 +1,15 @@
+{
+  "name": "claude-robot-widget",
+  "version": "1.0.0",
+  "description": "Floating capsule-robot avatar that mirrors Claude Code agent status",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "mcp": "node mcp-server.js"
+  },
+  "keywords": ["claude-code", "mcp", "widget", "electron"],
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^32.0.0"
+  }
+}
