@@ -190,6 +190,14 @@ async function handle(msg) {
   }
 }
 
+// Uçuşta olan istekleri say: stdin kapansa bile yanıtı yazmadan çıkma.
+let pending = 0;
+let stdinClosed = false;
+
+function maybeExit() {
+  if (stdinClosed && pending === 0) process.exit(0);
+}
+
 let buffer = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (chunk) => {
@@ -202,10 +210,14 @@ process.stdin.on('data', (chunk) => {
     let msg;
     try { msg = JSON.parse(line); }
     catch { continue; }
-    handle(msg).catch((err) => {
-      if (msg && msg.id != null) replyError(msg.id, -32603, err.message);
-    });
+
+    pending++;
+    handle(msg)
+      .catch((err) => {
+        if (msg && msg.id != null) replyError(msg.id, -32603, err.message);
+      })
+      .finally(() => { pending--; maybeExit(); });
   }
 });
 
-process.stdin.on('end', () => process.exit(0));
+process.stdin.on('end', () => { stdinClosed = true; maybeExit(); });
