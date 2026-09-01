@@ -1,23 +1,26 @@
 {
-  "_comment": "Bu bloğu .claude/settings.json (proje) veya ~/.claude/settings.json (global) icine kopyala. Yollar bu kurulum icin doldurulmustur.",
+  "_comment": "Bu blogu .claude/settings.json (proje) veya ~/.claude/settings.json (global) icine kopyala. Yollar bu kurulum icin doldurulmustur. async:true -> hook hicbir arac cagrisini bekletmez.",
   "hooks": {
     "SessionStart": [
-      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"", "async": true, "timeout": 5 }] }
     ],
     "UserPromptSubmit": [
-      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"", "async": true, "timeout": 5 }] }
     ],
     "PreToolUse": [
-      { "matcher": "*", "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"", "async": true, "timeout": 5 }] }
     ],
     "PostToolUse": [
-      { "matcher": "*", "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"", "async": true, "timeout": 5 }] }
     ],
     "Notification": [
-      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"", "async": true, "timeout": 5 }] }
     ],
     "Stop": [
-      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"" }] }
+      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"", "async": true, "timeout": 5 }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"", "async": true, "timeout": 5 }] }
     ]
   }
 }
