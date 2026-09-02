@@ -30,6 +30,15 @@ const MAP = {
   SessionEnd:      { state: 'idle' }
 };
 
+// Dosyaya yazan araçlar 'working' değil 'writing' gösterir: okumak/komut
+// çalıştırmak ile kod üretmek farklı işler, robot da farklı davransın.
+const WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
+
+function baseName(p) {
+  const parts = String(p).split(/[\\/]/);
+  return parts[parts.length - 1] || '';
+}
+
 function send(body) {
   const payload = JSON.stringify(body);
   const req = http.request(
@@ -72,9 +81,15 @@ process.stdin.on('end', () => {
 
   const body = { ...entry };
 
-  // PreToolUse'da hangi aracın çalıştığını göğüs ekranına yaz.
   if (ev.hook_event_name === 'PreToolUse' && ev.tool_name) {
-    body.text = String(ev.tool_name).toUpperCase().slice(0, 11);
+    if (WRITE_TOOLS.has(ev.tool_name)) {
+      // Yazma araçlarında ekranda araç adı yerine dosya adı görünsün.
+      const file = ev.tool_input && ev.tool_input.file_path;
+      body.state = 'writing';
+      body.text = (file ? baseName(file) : ev.tool_name).slice(0, 11);
+    } else {
+      body.text = String(ev.tool_name).toUpperCase().slice(0, 11);
+    }
   }
 
   send(body);

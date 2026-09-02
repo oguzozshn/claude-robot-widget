@@ -16,7 +16,7 @@ const PORT = Number(process.env.CLAUDE_ROBOT_PORT) || 47821;
 const HOST = '127.0.0.1';
 const PROTOCOL_VERSION = '2024-11-05';
 
-const VALID_STATES = ['idle', 'thinking', 'working', 'waiting', 'success', 'error'];
+const VALID_STATES = ['idle', 'thinking', 'working', 'writing', 'waiting', 'success', 'error'];
 const VALID_THEMES = ['neon', 'silver', 'blue', 'red', 'pastel'];
 
 /* --------------------------------------------------------- widget'a istek */
@@ -59,9 +59,10 @@ const TOOLS = [
   {
     name: 'robot_set_state',
     description:
-      'Masaüstündeki robot avatarının durumunu değiştirir. Uzun bir işe başlarken "working", ' +
-      'düşünürken "thinking", kullanıcıdan girdi beklerken "waiting", iş bitince "success", ' +
-      'gerçek bir başarısızlıkta "error", boştayken "idle" kullan.',
+      'Masaüstündeki robot avatarının durumunu değiştirir. Düşünürken "thinking", okuma/komut ' +
+      'gibi bir iş yaparken "working", dosyaya kod yazarken "writing", kullanıcıdan girdi ' +
+      'beklerken "waiting", iş bitince "success", gerçek bir başarısızlıkta "error", boştayken ' +
+      '"idle" kullan.',
     inputSchema: {
       type: 'object',
       properties: {

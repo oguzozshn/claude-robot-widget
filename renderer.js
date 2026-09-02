@@ -49,6 +49,14 @@ const STATES = {
     arm: 12, armA: 0, armS: 0, eye: SQUINT, blink: 4.5, scanEye: 1.7,
     beep: [620, 760]
   },
+  writing: {
+    // working'in kardeşi: aynı mor aile, ama duran değil üreten bir hâl.
+    // Kollar zıt fazda hızlı hareket eder -> klavyede yazma hissi.
+    label: 'WRITING', led: '#c084fc',
+    floatA: 1.6, floatS: 1.4, spin: 0, orbit: 0, sway: 1.4, swayS: 1.7,
+    arm: 22, armA: 26, armS: 6.5, armAlt: true, eye: 0.58, blink: 2.8, scanEye: 1.2,
+    beep: [880, 720]
+  },
   waiting: {
     label: 'INPUT?', led: '#fbbf24',
     floatA: 3.2, floatS: 1.2, spin: 0, orbit: 0.3, sway: 3.5, swayS: 0.9,
@@ -181,10 +189,12 @@ function frame(now) {
   // --- baş salınımı
   head.setAttribute('transform', `rotate(${(cur.sway * Math.sin(t * cfg.swayS * Math.PI)).toFixed(2)} 100 118)`);
 
-  // --- kollar (simetrik ayna)
+  // --- kollar: normalde simetrik ayna, armAlt ise zıt fazda (yazma hissi)
   const osc = cfg.armA * Math.sin(t * cfg.armS * Math.PI);
-  armL.setAttribute('transform', `rotate(${(cur.arm + osc).toFixed(2)} 46 138)`);
-  armR.setAttribute('transform', `rotate(${(-(cur.arm + osc)).toFixed(2)} 154 138)`);
+  const aL = cur.arm + osc;
+  const aR = cur.arm + (cfg.armAlt ? -osc : osc);
+  armL.setAttribute('transform', `rotate(${aL.toFixed(2)} 46 138)`);
+  armR.setAttribute('transform', `rotate(${(-aR).toFixed(2)} 154 138)`);
 
   // --- renkler
   const led = cfg.led || themeLed();

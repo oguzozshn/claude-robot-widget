@@ -18,7 +18,7 @@ const DEFAULTS = {
 const THEMES = ['neon', 'silver', 'blue', 'red', 'pastel'];
 const THEME_LABEL = { neon: 'Neon (cyan)', silver: 'Gümüş', blue: 'Mavi', red: 'Kırmızı', pastel: 'Pastel' };
 const SIZES = [120, 150, 180, 200, 240];
-const STATES = ['idle', 'thinking', 'working', 'waiting', 'success', 'error'];
+const STATES = ['idle', 'thinking', 'working', 'writing', 'waiting', 'success', 'error'];
 
 let win = null;
 let cfg = { ...DEFAULTS };
