@@ -63,7 +63,7 @@ function send(body) {
 
 const [argState, argText] = process.argv.slice(2);
 if (argState) {
-  send({ state: argState, text: argText });
+  send({ state: argState, text: argText, sessionId: 'cli', project: 'CLI' });
   return;
 }
 
@@ -80,6 +80,12 @@ process.stdin.on('end', () => {
   if (!entry) process.exit(0);
 
   const body = { ...entry };
+
+  // Her olay hangi oturumdan geldiğini söyler: widget birden çok oturumu
+  // ayrı ayrı takip edip ekranda en öncelikli olanı gösterir.
+  body.sessionId = ev.session_id || 'default';
+  if (ev.cwd) body.project = baseName(ev.cwd);
+  if (ev.hook_event_name === 'SessionEnd') body.end = true;
 
   if (ev.hook_event_name === 'PreToolUse' && ev.tool_name) {
     if (WRITE_TOOLS.has(ev.tool_name)) {

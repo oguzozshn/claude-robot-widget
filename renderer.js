@@ -16,7 +16,8 @@ const $ = (id) => document.getElementById(id);
 const eyeL = $('eyeL'), eyeR = $('eyeR'), eyes = $('eyes');
 const armL = $('armL'), armR = $('armR'), head = $('head'), floatG = $('float');
 const ball = $('ball'), stalk = $('stalk');
-const txtEl = $('screenText'), scan = $('scan'), dot = $('dot');
+const txtEl = $('screenText'), scan = $('scan');
+const dotEls = Array.from(document.querySelectorAll('.sdot'));
 const thrust = $('thrust'), shadow = $('shadow');
 
 /* ------------------------------------------------------------- ayarlanabilir */
@@ -81,6 +82,8 @@ const STATES = {
 
 let state = 'idle';
 let custom = null;                       // ekranda gösterilecek özel yazı
+let project = null;                      // özeti kazanan oturumun proje adı
+let sessionDots = [];                    // her açık oturum için meşgul mü bilgisi
 let enter = performance.now() / 1000;    // duruma giriş anı
 let soundOn = true;
 
@@ -118,13 +121,16 @@ function playFor(s) {
 
 const lerp = (a, b, k) => a + (b - a) * k;
 
-function setState(next, text, silent) {
+function setState(payload) {
+  const next = payload.state;
   if (!STATES[next]) return;
   const changed = next !== state;
   state = next;
-  custom = text || null;
+  custom = payload.text || null;
+  project = payload.project || null;
+  sessionDots = Array.isArray(payload.dots) ? payload.dots : [];
   enter = performance.now() / 1000;
-  if (changed && !silent) playFor(next);
+  if (changed && !payload.silent) playFor(next);
 }
 
 function themeLed() {
@@ -202,7 +208,6 @@ function frame(now) {
   eyeR.setAttribute('fill', led);
   ball.setAttribute('fill', led);
   txtEl.setAttribute('fill', led);
-  dot.setAttribute('fill', led);
   scan.setAttribute('fill', led);
   eyes.style.filter = `drop-shadow(0 0 5px ${led}) drop-shadow(0 0 11px ${led})`;
   ball.style.filter = `drop-shadow(0 0 5px ${led})`;
@@ -211,15 +216,29 @@ function frame(now) {
   // --- göğüs ekranı
   dotsT += dt;
   if (dotsT > 0.38) { dotsT = 0; dots = (dots + 1) % 4; }
-  let label = custom
-    ? custom.toUpperCase().slice(0, 11)
-    : cfg.label + ((state === 'thinking' || state === 'working') ? '...'.slice(0, dots) : '');
+  const busyDots = (state === 'thinking' || state === 'working' || state === 'writing')
+    ? '...'.slice(0, dots) : '';
+  // Ekran yazısı: dosya/araç adı ile proje adı arasında 3 saniyede bir döner,
+  // böylece çok oturumda hangi projenin konuştuğu görünür.
+  const parts = [custom ? custom : cfg.label + busyDots];
+  if (project) parts.push(project);
+  const label = parts[Math.floor(t / 3) % parts.length].toUpperCase().slice(0, 11);
   txtEl.textContent = label;
   txtEl.setAttribute('font-size', label.length > 9 ? 9 : 10);
 
   scan.setAttribute('y', (142 + ((t * 26) % 30)).toFixed(1));
   scan.setAttribute('opacity', state === 'idle' ? '0.05' : '0.16');
-  dot.setAttribute('opacity', (state === 'idle' ? 0.25 : 0.35 + 0.45 * Math.abs(Math.sin(t * 2.2))).toFixed(2));
+
+  // --- oturum noktaları
+  const n = Math.max(1, Math.min(sessionDots.length, dotEls.length));
+  const pulse = 0.35 + 0.45 * Math.abs(Math.sin(t * 2.2));
+  for (let i = 0; i < dotEls.length; i++) {
+    if (i >= n) { dotEls[i].setAttribute('opacity', '0'); continue; }
+    dotEls[i].setAttribute('cx', (100 + (i - (n - 1) / 2) * 8.5).toFixed(2));
+    dotEls[i].setAttribute('fill', led);
+    const busy = sessionDots[i];
+    dotEls[i].setAttribute('opacity', (busy ? pulse : 0.22).toFixed(2));
+  }
   thrust.setAttribute('opacity', (state === 'idle' ? 0.35 : 0.7 + 0.3 * Math.abs(Math.sin(t * 1.6))).toFixed(2));
 
   requestAnimationFrame(frame);
@@ -263,7 +282,7 @@ document.addEventListener('contextmenu', (ev) => {
 
 /* ------------------------------------------------------------ ana süreç köprüsü */
 
-window.robot.onState((p) => setState(p.state, p.text, p.silent));
+window.robot.onState((p) => setState(p));
 
 window.robot.onConfig((c) => {
   document.body.className = 'theme-' + c.theme;

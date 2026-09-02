@@ -99,7 +99,15 @@
       <text id="screenText" x="100" y="161.5" text-anchor="middle"
             font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace"
             font-size="10" font-weight="700" letter-spacing="0.6" fill="var(--led)">IDLE</text>
-      <circle id="dot" cx="100" cy="192" r="3" fill="var(--led)"/>
+      <!-- Oturum noktaları: her açık Claude Code oturumu için bir nokta,
+           meşgul olanlar parlar. Konumları renderer.js yerleştirir. -->
+      <g id="dots">
+        <circle class="sdot" cx="100" cy="192" r="2.6" fill="var(--led)"/>
+        <circle class="sdot" cx="100" cy="192" r="2.6" fill="var(--led)" opacity="0"/>
+        <circle class="sdot" cx="100" cy="192" r="2.6" fill="var(--led)" opacity="0"/>
+        <circle class="sdot" cx="100" cy="192" r="2.6" fill="var(--led)" opacity="0"/>
+        <circle class="sdot" cx="100" cy="192" r="2.6" fill="var(--led)" opacity="0"/>
+      </g>
     </g>
 
     <g id="head">

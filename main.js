@@ -25,9 +25,21 @@ let cfg = { ...DEFAULTS };
 let cfgPath = null;
 let server = null;
 
-// Durum ana süreçte tutulur; renderer yeniden yüklense de kaybolmaz.
-let current = { state: 'idle', text: null, at: Date.now() };
-let revertTimer = null;
+// Durumlar ana süreçte oturum bazında tutulur; renderer yeniden yüklense de
+// kaybolmaz. Ekranda gösterilen şey bu tablonun özetidir (bkz. aggregate).
+const PRIORITY = {
+  waiting: 60,   // seni bekliyor -> her şeyi ezer, başka oturum bunu gizleyemez
+  error: 50,
+  writing: 41,
+  working: 40,
+  thinking: 30,
+  success: 20,
+  idle: 0
+};
+const SESSION_TTL_MS = 10 * 60 * 1000;   // sessiz kalan oturum düşer
+
+const sessions = new Map();   // sessionId -> { state, text, project, at, revertTimer }
+let lastSignature = '';
 
 /* ------------------------------------------------------------------ config */
 
@@ -111,7 +123,8 @@ function createWindow() {
   win.webContents.on('did-finish-load', () => {
     if (cfg.clickThrough) win.setIgnoreMouseEvents(true, { forward: true });
     pushConfig();
-    pushState(current.state, current.text, { silent: true });
+    lastSignature = '';        // renderer yeniden yüklendi, özeti tazeden gönder
+    publish(true);
   });
 
   win.on('closed', () => { win = null; });
@@ -130,22 +143,89 @@ function pushConfig() {
 
 /* -------------------------------------------------------------- state relay */
 
-function pushState(state, text, opts = {}) {
+// Tablodan ekrana çıkacak özeti hesaplar: en yüksek öncelikli oturum kazanır,
+// eşitlikte en son konuşan. Noktalar için de oturum listesini döndürür.
+function aggregate() {
+  if (sessions.size === 0) {
+    return { state: 'idle', text: null, project: null, dots: [], count: 0 };
+  }
+  let top = null;
+  for (const e of sessions.values()) {
+    if (!top ||
+        PRIORITY[e.state] > PRIORITY[top.state] ||
+        (PRIORITY[e.state] === PRIORITY[top.state] && e.at > top.at)) {
+      top = e;
+    }
+  }
+  const dots = [...sessions.values()]
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 5)
+    .map((e) => e.state !== 'idle');
+  return { state: top.state, text: top.text, project: top.project, dots, count: sessions.size };
+}
+
+function publish(silent) {
+  const agg = aggregate();
+  const sig = JSON.stringify(agg);
+  if (sig === lastSignature) return agg;
+  lastSignature = sig;
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('state', { ...agg, silent: !!silent });
+  }
+  return agg;
+}
+
+function setSessionState(id, state, opts = {}) {
   if (!STATES.includes(state)) {
     return { ok: false, error: `bilinmeyen durum "${state}" (geçerli: ${STATES.join(', ')})` };
   }
-  current = { state, text: text ? String(text).slice(0, 32) : null, at: Date.now() };
+  id = id || 'default';
+  const prev = sessions.get(id);
+  if (prev && prev.revertTimer) clearTimeout(prev.revertTimer);
 
-  clearTimeout(revertTimer);
+  const entry = {
+    state,
+    text: opts.text ? String(opts.text).slice(0, 32) : null,
+    // proje adı bir kez öğrenilir, sonraki olaylarda taşınır
+    project: opts.project ? String(opts.project).slice(0, 32) : (prev ? prev.project : null),
+    at: Date.now(),
+    revertTimer: null
+  };
+  sessions.set(id, entry);
+
   if (opts.durationMs > 0) {
-    revertTimer = setTimeout(() => pushState(opts.revertTo || 'idle', null), opts.durationMs);
+    entry.revertTimer = setTimeout(
+      () => setSessionState(id, opts.revertTo || 'idle', { project: entry.project }),
+      opts.durationMs
+    );
   }
 
-  if (win && !win.isDestroyed()) {
-    win.webContents.send('state', { ...current, silent: !!opts.silent });
-  }
-  return { ok: true, state: current.state, text: current.text };
+  publish(opts.silent);
+  return { ok: true, ...aggregate() };
 }
+
+function endSession(id) {
+  id = id || 'default';
+  const e = sessions.get(id);
+  if (e && e.revertTimer) clearTimeout(e.revertTimer);
+  sessions.delete(id);
+  publish();
+  return { ok: true, ...aggregate() };
+}
+
+// Çöken ya da SessionEnd göndermeden kapanan oturumlar sonsuza dek asılı kalmasın.
+setInterval(() => {
+  const now = Date.now();
+  let changed = false;
+  for (const [id, e] of sessions) {
+    if (now - e.at > SESSION_TTL_MS) {
+      if (e.revertTimer) clearTimeout(e.revertTimer);
+      sessions.delete(id);
+      changed = true;
+    }
+  }
+  if (changed) publish();
+}, 60 * 1000).unref();
 
 /* ---------------------------------------------------------- control server */
 
@@ -169,13 +249,25 @@ function startServer() {
     };
 
     if (req.method === 'GET' && (req.url === '/state' || req.url === '/')) {
-      return send(200, { ok: true, ...current, theme: cfg.theme, size: cfg.size });
+      return send(200, {
+        ok: true,
+        ...aggregate(),
+        theme: cfg.theme,
+        size: cfg.size,
+        detail: [...sessions.entries()].map(([id, e]) => ({
+          id, state: e.state, text: e.text, project: e.project, idleMs: Date.now() - e.at
+        }))
+      });
     }
 
     if (req.method === 'POST' && req.url === '/state') {
       return readBody(req, (err, body) => {
         if (err) return send(400, { ok: false, error: err.message });
-        const result = pushState(body.state, body.text, {
+        // SessionEnd: oturumu tablodan tamamen düşür
+        if (body.end) return send(200, endSession(body.sessionId));
+        const result = setSessionState(body.sessionId, body.state, {
+          text: body.text,
+          project: body.project,
           durationMs: Number(body.durationMs) || 0,
           revertTo: body.revertTo
         });
@@ -276,9 +368,26 @@ function showMenu() {
       submenu: STATES.map((s) => ({
         label: s.toUpperCase(),
         type: 'radio',
-        checked: current.state === s,
-        click: () => pushState(s, null)
+        checked: aggregate().state === s,
+        // Menüden verilen durum sahte bir oturum olarak girer, gerçek
+        // oturumların tablosunu bozmaz.
+        click: () => setSessionState('menu', s, { project: 'MENU' })
       }))
+    },
+    {
+      label: `Oturumlar (${sessions.size})`,
+      submenu: sessions.size === 0
+        ? [{ label: 'kayıtlı oturum yok', enabled: false }]
+        : [...sessions.entries()]
+            .sort((a, b) => b[1].at - a[1].at)
+            .map(([id, e]) => ({
+              label: `${e.project || id.slice(0, 8)} — ${e.state}`,
+              click: () => endSession(id)
+            }))
+            .concat([
+              { type: 'separator' },
+              { label: 'Tıklayınca o oturum listeden düşer', enabled: false }
+            ])
     },
     {
       label: 'Konumu sıfırla',
