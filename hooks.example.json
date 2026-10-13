@@ -1,5 +1,5 @@
 {
-  "_comment": "Bu blogu .claude/settings.json (proje) veya ~/.claude/settings.json (global) icine kopyala. Yollar bu kurulum icin doldurulmustur. async:true -> hook hicbir arac cagrisini bekletmez.",
+  "_comment": "Copy the hooks block into .claude/settings.json (project) or ~/.claude/settings.json (global). Replace /path/to/claude-robot-widget with the absolute path of your clone. async:true means the hook never delays a tool call.",
   "hooks": {
     "SessionStart": [
       { "hooks": [{ "type": "command", "command": "node \"/path/to/claude-robot-widget/hook.js\"", "async": true, "timeout": 5 }] }
