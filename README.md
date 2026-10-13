@@ -1,5 +1,9 @@
 # Claude Robot Widget
 
+<p align="center">
+  <img src="docs/demo.gif" alt="Claude Robot Widget cycling through its states" width="320">
+</p>
+
 An always-on-top capsule robot that sits in the corner of your desktop and shows
 what Claude Code is doing. Electron + SVG, 60 fps, transparent and draggable.
 
@@ -11,15 +15,17 @@ chest shows what is happening right now.
 
 ## States
 
-| State      | Looks like                                                   | Triggered by |
-|------------|--------------------------------------------------------------|--------------|
-| `idle`     | Eyes closed, antenna still, slow float                       | 4 s after `Stop`, `SessionStart` |
-| `thinking` | Antenna spins, head sways, eyes open and blink often         | `UserPromptSubmit`, `PostToolUse` |
-| `working`  | **Motion stops**, eyes narrow, color turns purple            | `PreToolUse` for read/command tools (tool name on screen) |
-| `writing`  | Arms move quickly in opposite phase, light purple            | `PreToolUse` for `Write` / `Edit` / `MultiEdit` / `NotebookEdit` (file name on screen) |
-| `waiting`  | Amber LED, arms open, `INPUT?` on screen                     | `Notification` (Claude is waiting for your input) |
-| `success`  | Arms up, a little jump, green LED                            | `Stop` |
-| `error`    | Shake, red LED                                               | Only when set explicitly via MCP |
+![All seven states side by side](docs/states.png)
+
+| | State      | Looks like                                                   | Triggered by |
+|-|------------|--------------------------------------------------------------|--------------|
+| <img src="docs/states/state-idle.png" width="56" alt="idle"> | `idle`     | Eyes closed, antenna still, slow float                       | 4 s after `Stop`, `SessionStart` |
+| <img src="docs/states/state-thinking.png" width="56" alt="thinking"> | `thinking` | Antenna spins, head sways, eyes open and blink often         | `UserPromptSubmit`, `PostToolUse` |
+| <img src="docs/states/state-working.png" width="56" alt="working"> | `working`  | **Motion stops**, eyes narrow, color turns purple            | `PreToolUse` for read/command tools (tool name on screen) |
+| <img src="docs/states/state-writing.png" width="56" alt="writing"> | `writing`  | Arms move quickly in opposite phase, light purple            | `PreToolUse` for `Write` / `Edit` / `MultiEdit` / `NotebookEdit` (file name on screen) |
+| <img src="docs/states/state-waiting.png" width="56" alt="waiting"> | `waiting`  | Amber LED, arms open, `INPUT?` on screen                     | `Notification` (Claude is waiting for your input) |
+| <img src="docs/states/state-success.png" width="56" alt="success"> | `success`  | Arms up, a little jump, green LED                            | `Stop` |
+| <img src="docs/states/state-error.png" width="56" alt="error"> | `error`    | Shake, red LED                                               | Only when set explicitly via MCP |
 
 `error` is intentionally not tied to a hook. A non-zero exit code in `PostToolUse`
 doesn't necessarily mean failure (a `grep` with no matches also exits with 1), so
@@ -204,6 +210,7 @@ renderer.js        Animation engine, state machine, dragging, sound
 mcp-server.js      MCP stdio server (no dependencies)
 hook.js            Claude Code hook bridge + CLI
 hooks.example.json Example hook configuration
+docs/              Demo GIF and state images used in this README
 ```
 
 ## License
